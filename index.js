@@ -1,44 +1,21 @@
-const commands = require('./src/commands')
-const modules = require('./src/modules')
+const TelegramBot = require('node-telegram-bot-api');
 
-const cron = require('node-cron')
-const fs = require('fs').promises;
-const dotenv = require('dotenv')
-dotenv.config();
+// Загрузка токена из переменных окружения
+const token = process.env.BOT_TOKEN;
 
-const { Client, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const discord = new Client({ 
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+// ID твоего Telegram (можно узнать через @userinfobot)
+const chatId = process.env.TELEGRAM_CHAT_ID;
 
-discord.once(Events.ClientReady, async (dc) => {
-    var setup = await modules.settingUp();
-    console.log(setup.message)
+// Создание бота
+const bot = new TelegramBot(token, { polling: false });
 
-	console.log(`[#] Upwork Bot Ready! ${ dc.user.tag }`);
-});
+// Пример отправки сообщения
+const sendJobUpdate = async () => {
+  const message = '💼 Новая вакансия на Upwork:\n\nНазвание: Example job\nЦена: $100\nСсылка: https://www.upwork.com/jobs/example';
+  await bot.sendMessage(chatId, message);
+};
 
-discord.on('messageCreate', async (message) => {
-    var result = commands.execute(message, discord);
-});
+// Запускаем отправку раз в 10 минут (600000 мс)
+setInterval(sendJobUpdate, 600000);
 
-cron.schedule('* * * * *', async () => {
-    var data = await fs.readFile('./assets/setup.json');
-    data = JSON.parse(data);
-
-    if (data.rss_channel != "") {
-        var today = new Date().toLocaleString('id-ID');
-        var result = await modules.channelNotifications(data, discord);
-        
-        console.log(`${ result } - ${ today }`)
-    }
-});
-
-// Log in to Discord with your client's token
-discord.login(process.env.DISCORD_TOKEN);
+console.log('✅ Бот запущен и будет слать обновления каждые 10 минут');
